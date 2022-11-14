@@ -1,0 +1,78 @@
+# AzureNCE Extractor.
+# Requires an Environment configured with the following variables:
+# microsoft_domain
+# application_id
+# application_secret
+# currency_code
+
+## Public variables
+# Set root directory for writing extracted files, relative to %EXIVITY_HOME_PATH%
+public var export_directory = "system/extracted/AzureNCE"
+# Set debugmode, this will increase disk usage (yes/no)
+public var debug_mode = "no"
+# Extract unbilled data for dataDate (yes/no)
+public var extract_unbilled = "yes"
+# Extract billed data for argument date (yes/no)
+public var extract_billed = "yes"
+
+## Setup debugmode
+if (${debug_mode} == yes) {
+    loglevel DEBUGX
+	print microsoft_domain: "${microsoft_domain}"
+	print application_id: "${application_id}"
+	print application_secret: "${application_secret}"
+	print currency_code: "${currency_code}"
+} else {
+    loglevel INFO
+}
+
+## Pre Extraction tests
+if (${debug_mode} == yes) {
+	print Running pre extraction checks
+}
+# Test for default environment
+if (("${microsoft_domain}" == "Default") && ("${application_id}" == "Default") && ("${application_secret}" == "Default")) {
+	print "Cannot run the Extractor in the default environment!"
+	terminate with error
+}
+# Test the date argument
+gosub check_dateformat(${ARG_1})
+
+## Pre Extraction Setup
+if (${debug_mode} == yes) {
+	print Running pre extraction setup
+}
+# Setup date data
+gosub format_date(${ARG_1})
+# Setup invoice offset
+gosub determine_offset(${year},${month})
+# Setup Partnerroot
+var partner_root = "https://api.partnercenter.microsoft.com"
+# Encode items for token
+uri encode-component application_id
+uri encode-component application_secret
+# Setup default paths
+var auth_json_file = "${export_directory}/DEBUG/Auth/${microsoft_domain}/${YEAR}${MONTH}${DAY}_Auth.json"
+var billing_onetime_export_file = "${export_directory}/Invoices/Billed/${year}${month}_invoice_onetime_${microsoft_domain}.csv"
+var billing_marketplace_export_file = "${export_directory}/Invoices/Billed/${year}${month}_invoice_marketplace_${microsoft_domain}.csv"
+var billing_final_file = "${export_directory}/Invoices/Billed/${year}${month}data.csv"
+var billing_json_filepath = "${export_directory}/DEBUG/Invoices/Billed/${microsoft_domain}"
+var unbilled_export_file = "${export_directory}/Invoices/Unbilled/${YEAR}${MONTH}_${microsoft_domain}.csv"
+var unbilled_json_filepath = "${export_directory}/DEBUG/Invoices/Unbilled/${microsoft_domain}"
+# Write debug data
+if (${debug_mode} == yes) {
+	print exportdir: ${export_directory}
+	print day: ${day}
+	print month: ${month}
+	print year: ${year}
+	print offset: ${offset}
+	print partner_root: ${partner_root}
+	print auth_json_file: ${auth_json_file}
+	print billing_onetime_export_file: ${billing_onetime_export_file}
+	print billing_marketplace_export_file: ${billing_marketplace_export_file}
+	print billing_json_filepath: ${billing_json_filepath}
+	print unbilled_export_file: ${unbilled_export_file}
+	print unbilled_json_filepath: ${unbilled_json_filepath}
+}
+if()
+buffer foo=file 

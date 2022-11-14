@@ -1,0 +1,165 @@
+#################################################################
+## Iro
+################################################################ 
+##
+## * Twitter : ainslec , Web: http://eeyo.io/iro
+##
+################################################################
+
+name                   = exivityuse
+file_extensions []     = use, usescript;
+
+
+################################################################
+## Styles
+################################################################
+
+styles [] {
+
+.comment : style {
+   color                 = light_green
+   italic                = true
+   textmate_scope        = comment.line.number-sign.use
+}
+.keyword : style {
+   color                 = light_blue
+   italic                = false
+   textmate_scope        = keyword.use
+}
+.option : style {
+   color                 = orange
+   italic                = false
+   textmate_scope        = keyword.other.option.use
+}
+.string : style {
+   color                 = grey
+   italic                = false
+   textmate_scope        = string.quoted.double.use
+}
+.punctuation : style {
+   color                 = cyan
+   italic                = false
+   textmate_scope        = keyword.operator.use
+}
+.number : style {
+   color                 = light_yellow
+   italic                = false
+   textmate_scope        = constant.numeric.use
+}
+.variable : style {
+   color                 = green
+   italic                = false
+   textmate_scope        = variable.other.readwrite.use
+}
+.storage : style {
+   color                 = violet
+   italic                = false
+   textmate_scope        = storage.type.use
+}
+.function : style {
+   color                 = gold
+   italic                = false
+   textmate_scope        = support.function.use
+}
+.parslet : style {
+   color                 = #90A4AE
+   italic                = true
+   textmate_scope        = support.type.use
+}
+}
+
+#################################################
+## Parse contexts
+#################################################
+
+contexts [] {
+
+##############################################
+## Main Context - Entry point context
+##############################################
+
+main : context {
+   : pattern {
+      regex    \= (#.*)
+      styles[] = .comment;
+   }
+   : pattern {
+      regex    \= (\.\[.+\])
+      styles[] = .parslet;
+   }
+   : inline_push {
+      regex \= ((var\s)|(public var\s))
+      styles[] =.storage;
+      default_style = .variable
+      : pop {
+         regex \= (\s)
+         styles[] = .variable;
+      }
+   }
+   : pattern {
+      regex    \= ((aws_sign_string|basename|buffer|clear|csv|decimal_to_ipv4|discard|encode|encrypt|environment|exit_loop|foreach|generate_jwt|get_last_day_of|gosub|gunzip|hash|http|if|ipv4_to_decimal|json|loglevel|loop|lowercase|match|pause|print|return|save|set|subroutine|terminate|unzip|uppercase|uri|else|){1}\s)
+      styles[] = .keyword;
+   }
+   : pattern {
+      regex    \= (@(MIN|MAX|ROUND|CONCAT|SUBSTR|STRLEN|PAD|EXTRACT_BEFORE|EXTRACT_AFTER|CURDATE|DATEADD|DATEDIFF|DTADD|){1})
+      styles[] = .function;
+   }
+   : pattern {
+      regex    \= ((encode-component|INFO|DEBUG|DEBUGX|WARN|ERROR|FATAL|using|as|http_headers|add_headers|fix_headers|write_fields|write_field|close|http_secure|http_header|http_savefile|with error){1}\s)
+      styles[] = .option;
+   }
+   : pattern {
+      regex    \= ((GET|POST|PUT|DELETE){1})
+      styles[] = .option;
+   }
+   : inline_push {
+      regex \= (")
+      styles[] =.punctuation;
+      default_style = .string
+      : pop {
+         regex \= (")
+         styles[] = .punctuation;
+      }
+   }
+   : inline_push {
+      regex \= (\$\{)
+      styles[] =.variable;
+      default_style = .variable
+      : pop {
+         regex \= (\})
+         styles[] = .variable;
+      }
+   }
+   : pattern {
+      regex    \= (\.|,|{|}|\(|\)|=|-|\%|:|!)
+      styles[] = .punctuation;
+   }
+   : pattern {
+      regex    \= (\d+)
+      styles[] = .number;
+   }
+   : inline_push {
+      regex \= (\$JSON\{)
+      styles[] =.parslet;
+      default_style = .parslet
+      : pop {
+         regex \= (\})
+         styles[] = .parslet;
+      }
+   }
+   : inline_push {
+      regex \= (\$JSON\()
+      styles[] =.parslet;
+      default_style = .parslet
+      : pop {
+         regex \= (\))
+         styles[] = .parslet;
+      }
+   }
+}
+
+#################################################
+## End of Contexts
+#################################################
+
+}
