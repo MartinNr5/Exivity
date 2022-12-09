@@ -19,52 +19,52 @@ styles [] {
 .comment : style {
    color                 = light_green
    italic                = true
-   textmate_scope        = comment.line.number-sign.use
+   textmate_scope        = comment.line.number-sign
 }
 .keyword : style {
    color                 = light_blue
    italic                = false
-   textmate_scope        = keyword.use
+   textmate_scope        = keyword
 }
 .option : style {
    color                 = orange
    italic                = false
-   textmate_scope        = keyword.other.option.use
+   textmate_scope        = keyword.other.option
 }
 .string : style {
    color                 = grey
    italic                = false
-   textmate_scope        = string.quoted.double.use
+   textmate_scope        = string.quoted.double
 }
 .punctuation : style {
    color                 = cyan
    italic                = false
-   textmate_scope        = keyword.operator.use
+   textmate_scope        = keyword.operator
 }
 .number : style {
    color                 = light_yellow
    italic                = false
-   textmate_scope        = constant.numeric.use
+   textmate_scope        = constant.numeric
 }
 .variable : style {
    color                 = green
    italic                = false
-   textmate_scope        = variable.other.readwrite.use
+   textmate_scope        = variable.other.readwrite
 }
 .storage : style {
    color                 = violet
    italic                = false
-   textmate_scope        = storage.type.use
+   textmate_scope        = storage.type
 }
 .function : style {
    color                 = gold
    italic                = false
-   textmate_scope        = support.function.use
+   textmate_scope        = support.function
 }
 .parslet : style {
    color                 = #90A4AE
    italic                = true
-   textmate_scope        = support.type.use
+   textmate_scope        = support.type
 }
 }
 
@@ -97,7 +97,7 @@ main : context {
       }
    }
    : pattern {
-      regex    \= ((aws_sign_string|basename|buffer|clear|csv|decimal_to_ipv4|discard|encode|encrypt|environment|exit_loop|foreach|generate_jwt|get_last_day_of|gosub|gunzip|hash|http|if|ipv4_to_decimal|json|loglevel|loop|lowercase|match|pause|print|return|save|set|subroutine|terminate|unzip|uppercase|uri|else|){1}\s)
+      regex    \= ((aws_sign_string|basename|buffer|clear|csv|decimal_to_ipv4|discard|encode|encrypt|environment|exit_loop|foreach|generate_jwt|get_last_day_of|gosub|gunzip|hash|http|if|ipv4_to_decimal|json|loglevel|loop|lowercase|match|pause|return|save|set|subroutine|terminate|unzip|uppercase|uri|else|){1}\s)
       styles[] = .keyword;
    }
    : pattern {
@@ -111,6 +111,15 @@ main : context {
    : pattern {
       regex    \= ((GET|POST|PUT|DELETE){1})
       styles[] = .option;
+   }
+   : inline_push {
+      regex \= (print\s{1})
+      styles[] =.keyword;
+      default_style = .string
+      : pop {
+         regex \= ($)
+         styles[] = .string;
+      }
    }
    : inline_push {
       regex \= (")
@@ -131,7 +140,7 @@ main : context {
       }
    }
    : pattern {
-      regex    \= (\.|,|{|}|\(|\)|=|-|\%|:|!)
+      regex    \= (\.|,|\{|\}|\[|\]|\(|\)|=|-|\%|:|!|\+|<|>|\||\\|\*|¤|%|\/)
       styles[] = .punctuation;
    }
    : pattern {

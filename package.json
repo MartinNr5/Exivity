@@ -9,7 +9,9 @@
 		"url": "https://github.com/MartinNr5/Exivity"
 	},
 	"publisher": "Martin Edelius",
-	"categories": [],
+	"categories": [
+		"Snippets"
+	],
 	"keywords": [
 		"multi-root ready"
 	],
@@ -57,7 +59,8 @@
 				],
 				"extensions": [
 					".trs"
-				]
+				],
+				"configuration": "./exivitytrs.language-configuration.json"
 			}		],
 		"grammars": [
 			{

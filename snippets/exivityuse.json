@@ -1,0 +1,405 @@
+{
+	"foreach (example)": {
+		"prefix": [
+			"foreach"
+		],
+		"body": [
+			"foreach \\$JSON{${1:RESPONSE}}.[{${2:KEY}}] as ${3:record}} {\n\tcsv write_field {${4:my_csv}} \\$JSON({${5:record}}).[{${6:my_key}}]\n}"
+		],
+		"description": "Example for looping over a JSON response payload"
+	},
+	"ifelse (example)": {
+		"prefix": [
+			"ifelse"
+		],
+		"body": [
+			"if (${0:condition}) {\n\t$1\n} else {\n\t$2\n}"
+		],
+		"description": "If-Else Statement"
+	},
+	"MAX": {
+		"prefix": [
+			"MAX"
+		],
+		"body": [
+			"@MAX(${1:<number>}, ${2:<number>} ${3:[, <number> ...]})"
+		],
+		"description": [
+			"Return the largest number from the specified list (requires at least 2 arguments)"
+		]
+	},
+	"MIN": {
+		"prefix": [
+			"MIN"
+		],
+		"body": [
+			"@MIN(${1:<number>}, ${2:<number>} ${3:[, <number> ...]})"
+		],
+		"description": [
+			"Return the smallest number from the specified list (requires at least 2 arguments)"
+		]
+	},
+	"ROUND": {
+		"prefix": [
+			"ROUND"
+		],
+		"body": [
+			"@ROUND(${1:<number>} ${2:[, <digits>]})"
+		],
+		"description": "Returns number rounded to digits decimal places. If the digits argument is not specified then the function will round to the nearest integer."
+	},
+	"CONCAT": {
+		"prefix": [
+			"CONCAT"
+		],
+		"body": [
+			"@CONCAT(${1:<string1>, ${2:<string2>} ${3:[, <stringN> ...]})"
+		],
+		"description": "Treats all arguments as strings, concatenates them, and returns the result."
+	},
+	"SUBSTR": {
+		"prefix": [
+			"SUBSTR"
+		],
+		"body": [
+			"@SUBSTR(${1:<string>}, ${2:<start> ${3:[, <length>]})"
+		],
+		"description": "Return a sub-string of string, starting from the character at position start and continuing until the end of the string end until the character at position length, whichever is shorter."
+	},
+	"CURDATE": {
+		"prefix": [
+			"CURDATE"
+		],
+		"body": [
+			"@CURDATE()"
+		],
+		"description": "Returns the current (actual) date in the timezone of the Exivity server. The format may be any valid combination of strftime specifiers. The default format is %Y%m%d which returns a date in yyyyMMdd format."
+	},
+	"DATEADD": {
+		"prefix": [
+			"DATEADD"
+		],
+		"body": [
+			"@DATEADD(${1:<date>}, ${2:<days>})"
+		],
+		"description": "Adds a specified number of days to the given date, returning the result as a yyyyMMdd date."
+	},
+	"DATEDIFF": {
+		"prefix": [
+			"DATEDIFF"
+		],
+		"body": [
+			"@DATEDIFF(${1:<date1>}, ${2:<date2>})"
+		],
+		"description": "Returns the difference in days between two yyyyMMdd dates. A positive result means that date1 is later than date2. A negative result means that date2 is later than date1. A result of 0 means that the two dates are the same."
+	},
+	"DTADD": {
+		"prefix": [
+			"DTADD"
+		],
+		"body": [
+			"@DTADD(${1:<datetime>}, ${2:<count>} ${3:[, <units>]})"
+		],
+		"description": "Adds *count* number of unit_s (DAYS by default) to the specified datetime value and return normalised result datetime value in YYYYMMDDhhmmss_ format."
+	},
+	"PAD": {
+		"prefix": [
+			"PAD"
+		],
+		"body": [
+			"@DTADD(${1:<width>}, ${2:<value>} ${3:[, <pad_char>]})"
+		],
+		"description": ""
+	},
+	"EXTRACT_BEFORE": {
+		"prefix": [
+			"EXTRACT_BEFORE"
+		],
+		"body": [
+			"@EXTRACT_BEFORE(${1:<string>}, ${2:<pattern>})"
+		],
+		"description": ""
+	},
+	"EXTRACT_AFTER": {
+		"prefix": [
+			"EXTRACT_AFTER"
+		],
+		"body": [
+			"@EXTRACT_AFTER(${1:<string>}, ${2:<pattern>})"
+		],
+		"description": ""
+	},
+	"aws_sign_string": {
+		"prefix": [
+			"aws_sign_string"
+		],
+		"body": "aws_sign_string ${1:<varName>} using ${2:<secret_key>} ${3:<date>} ${4:<region>} ${5:<service>}"
+	},
+	"basename": {
+		"prefix": [
+			"basename"
+		],
+		"body": [
+			"basename ${1:<var_name>}"
+		],
+		"description": ""
+	},
+	"basename as": {
+		"prefix": [
+			"basename as"
+		],
+		"body": [
+			"basename ${1:<string>} as ${2:<var_name>}"
+		],
+		"description": ""
+	},
+	"clear http_headers": {
+		"prefix": [
+			"clear http_headers"
+		],
+		"body": [
+			"clear http_headers"
+		],
+		"description": ""
+	},
+	"discard": {
+		"prefix": [
+			"discard"
+		],
+		"body": [
+			"discard {${1:<buffer_name>}}"
+		],
+		"description": ""
+	},
+	"encode base16": {
+		"prefix": [
+			"encode base16"
+		],
+		"body": [
+			"encode base16 ${1:<var_or_buffer>}"
+		],
+		"description": ""
+	},
+	"encode base64": {
+		"prefix": [
+			"encode base64"
+		],
+		"body": [
+			"encode base64 ${1:<var_or_buffer>}"
+		],
+		"description": ""
+	},
+	"encrypt": {
+		"prefix": [
+			"encrypt"
+		],
+		"body": [
+			"encrypt var ${1:<var_name>} = ${2:<value>}"
+		],
+		"description": ""
+	},
+	"environment": {
+		"prefix": [
+			"environment"
+		],
+		"body": [
+			"environment ${1:<name>}"
+		],
+		"description": ""
+	},
+	"escape": {
+		"prefix": [
+			"escape"
+		],
+		"body": "escape quotes in ${1:<var_or_buffer>} ${2:[using <escape_char>]}"
+	},
+	"exit_loop": {
+		"prefix": [
+			"exit_loop"
+		],
+		"body": [
+			"exit_loop"
+		],
+		"description": ""
+	},
+	"generate_jwt": {
+		"prefix": [
+			"generate_jwt"
+		],
+		"body": "generate_jwt key ${1:<key> ${2:<component>} ${3:[... <component>]} as ${4:<var_name>}"
+	},
+	"get_last_day_of": {
+		"prefix": [
+			"get_last_day_of"
+		],
+		"body": [
+			"get_last_day_of ${1:<yyyyMM>} as ${2:<var_name>}"
+		],
+		"description": ""
+	},
+	"gunzip file": {
+		"prefix": [
+			"gunzip file"
+		],
+		"body": [
+			"gunzip ${1:<filename>} as ${2:<filename>}"
+		],
+		"description": ""
+	},
+	"gunzip buffer": {
+		"prefix": [
+			"gunzip buffer"
+		],
+		"body": [
+			"gunzip {${1:<buffer_name>}} as ${2:<filename>}"
+		],
+		"description": ""
+	},
+	"hash sha256": {
+		"prefix": [
+			"hash sha256"
+		],
+		"body": "hash sha256 ${1:[HMAC [b16|b64] <key>]} ${2:<var_or_buffer>} as ${3:<var_name>} ${4:[b16|b64]}"
+	},
+	"hash md5": {
+		"prefix": [
+			"hash md5"
+		],
+		"body": "hash md5 ${1:<var_or_buffer>} as ${2:<var_name>} ${3:[b16|b64]}"
+	},
+	"http": {
+		"prefix": [
+			"http"
+		],
+		"body": [
+			"http ${1:<method>} ${2:<url>}"
+		],
+		"description": ""
+	},
+	"http dump_headers": {
+		"prefix": [
+			"http dump_headers"
+		],
+		"body": [
+			"http dump_headers"
+		],
+		"description": ""
+	},
+	"http get_header": {
+		"prefix": [
+			"http get_header"
+		],
+		"body": [
+			"http get_header ${1:<header_name>} as ${2:<var_name>}"
+		],
+		"description": ""
+	},
+	"json": {
+		"prefix": [
+			"json"
+		],
+		"body": [
+			"json format {${1:<buffer_name>}}"
+		],
+		"description": ""
+	},
+	"loglevel": {
+		"prefix": [
+			"loglevel"
+		],
+		"body": [
+			"loglevel ${1:<level>}"
+		],
+		"description": ""
+	},
+	"pause": {
+		"prefix": [
+			"pause"
+		],
+		"body": [
+			"pause ${1:<delaytime>}"
+		],
+		"description": ""
+	},
+	"print": {
+		"prefix": [
+			"print"
+		],
+		"body": [
+			"print ${1:[-n]} ${2:<text_or_buffer>}"
+		],
+		"description": ""
+	},
+	"save": {
+		"prefix": [
+			"save"
+		],
+		"body": [
+			"save {${1:<buffer_name>}} as ${2:<file_name>}"
+		],
+		"description": ""
+	},
+	"set": {
+		"prefix": [
+			"set"
+		],
+		"body": [
+			"set ${1:<setting>} ${2:<value>}"
+		],
+		"description": ""
+	},
+	"terminate": {
+		"prefix": [
+			"terminate"
+		],
+		"body": [
+			"terminate"
+		],
+		"description": ""
+	},
+	"terminate with error": {
+		"prefix": [
+			"terminate with error"
+		],
+		"body": [
+			"terminate with error"
+		],
+		"description": ""
+	},
+	"unzip": {
+		"prefix": [
+			"unzip"
+		],
+		"body": [
+			"unzip {${1:<buffer_name>}}"
+		],
+		"description": ""
+	},
+	"uri encode": {
+		"prefix": [
+			"uri encode"
+		],
+		"body": [
+			"uri encode ${1:<var_name>}"
+		],
+		"description": ""
+	},
+	"uri component-encode": {
+		"prefix": [
+			"uri component-encode"
+		],
+		"body": [
+			"uri component-encode ${1:<var_name>}"
+		],
+		"description": ""
+	},
+	"uri aws-object-encode": {
+		"prefix": [
+			"uri aws-object-encode"
+		],
+		"body": [
+			"uri aws-object-encode ${1:<var_name>}"
+		],
+		"description": ""
+	}
+}

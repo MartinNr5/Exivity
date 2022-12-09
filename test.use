@@ -1,78 +1,287 @@
-# AzureNCE Extractor.
-# Requires an Environment configured with the following variables:
-# microsoft_domain
-# application_id
-# application_secret
-# currency_code
+# ServiceDesk Plus Endpoint ( IP/hostname)
+public var servicedesk_endpoint = "hcservicedesk.b2b.tele2.se"
+# ServiceDesk Plus API Key
+public var api_key = "360F19B7-17A6-4B8C-A4E7-EDB9BEBFE12F"
+# Directory where data is exported to
+public var exportdir = "system/extracted/T2HC/ManageEngine/ServiceDeskPlus/Requests"
+# Setup Loglevel
+loglevel DEBUGX
+# Setup API endpoint
+var httproot = "https://${servicedesk_endpoint}"
+# Setup JSON output folder
+var jsonfolder = "${exportdir}/JSON"
+# Setup JSON body folder
+var bodyfolder = "${exportdir}/RequestBody"
 
-## Public variables
-# Set root directory for writing extracted files, relative to %EXIVITY_HOME_PATH%
-public var export_directory = "system/extracted/AzureNCE"
-# Set debugmode, this will increase disk usage (yes/no)
-public var debug_mode = "no"
-# Extract unbilled data for dataDate (yes/no)
-public var extract_unbilled = "yes"
-# Extract billed data for argument date (yes/no)
-public var extract_billed = "yes"
+var from_date = "${ARG_1}"
+var to_date = "${ARG_2}"
+var current_date = (@CURDATE())
+var unixTimeStamp = ${UNIX_UTC}
 
-## Setup debugmode
-if (${debug_mode} == yes) {
-    loglevel DEBUGX
-	print microsoft_domain: "${microsoft_domain}"
-	print application_id: "${application_id}"
-	print application_secret: "${application_secret}"
-	print currency_code: "${currency_code}"
-} else {
-    loglevel INFO
+print Executing for date: ${from_date} - ${to_date}
+
+# We do a bunch of date and time wrangling to calculate the timestamps used in the API request later
+var current_hour = (@CURDATE("%H"))
+var current_minute = (@CURDATE("%M"))
+var current_second = (@CURDATE("%S"))
+
+# Debug
+#print "~ Current time: ${current_hour}:${current_minute}:${current_second}"
+
+# Calculate the number of seconds elapsed today
+# Not really sure why we need to subtract one hour but the timestamp is wrong if not so I'm just doing it
+var from_adjustment = (((${current_hour} - 1) * 3600) + (${current_minute} * 60) + ${current_second})
+# Calculate the number of seconds left until 23:59:59 (86399 is the number of seconds in 23 hours, 59 minuts, and 59 seconds)
+# Not really sure why we need to add one hour but the timestamp is wrong if not so I'm just doing it
+var to_adjustment = (86399 - (((${current_hour} + 1) * 3600) + (${current_minute} * 60) + ${current_second}))
+
+var from_days_diff = (@DATEDIFF(${current_date},${from_date}))
+var to_days_diff = (@DATEDIFF(${current_date},${to_date}))
+
+# Debug
+#print "~ From days diff: ${from_days_diff}"
+#print "~ To days diff: ${to_days_diff}"
+
+# By subtracting the number of seconds elapsed today we get the start of the day
+var from_timestamp = ((${UNIX_UTC} - ${from_adjustment}) - (${from_days_diff} * 24 * 60 * 60))
+
+# By adding the number of seconds remaining until 23:59:59 we get the end of the day
+var to_timestamp = ((${UNIX_UTC} + ${to_adjustment}) - (${to_days_diff} * 24 * 60 * 60))
+
+# Multiply timestamps by 1000 to get nanoseconds as used by SDP
+var from_timestamp = (${from_timestamp} * 1000)
+var to_timestamp = (${to_timestamp} * 1000)
+
+# Debug
+#print "From timestamp: ${from_timestamp}"
+#print "To timestamp: ${to_timestamp}"
+#terminate
+
+# Determine date output
+gosub format_date (${ARG_1})
+var thisday = ${day}
+var thismonth = ${month}
+var thisyear = ${year}
+
+# Setup output file
+var requests_export_file = "${exportdir}/${thisyear}${thismonth}${thisday}_Requests_List.csv"
+
+# Create output CSV file
+print "===================================="
+print "Opening file ${requests_export_file}"
+
+csv "requests" = "${requests_export_file}"
+csv add_headers "requests" requester_email_id requester_name requester_mobile resolved_time requester_id requester_status template_name template_id short_description created_time subject is_overdue technician_email_id technician_name technician_mobile technician_is_vipuser technician_id technician_status priority_name priority_id created_by_email_id created_by_name created_by_mobile created_by_is_vipuser created_by_id created_by_status due_by_time site_email_id site_latitude site_name site_id site_longitude is_service_request accountcontract id account_name account_id status_name status_id group is_billable billable_time
+csv fix_headers "requests"
+
+# prime extraction page loop
+var pageoffset = 1
+var has_more_rows = "false"
+var request_counter = 1
+
+# "Infinite" loop used to paginate through requests in payload (API sends 100 at a time)
+loop requestlists {
+	# Extract Requests list
+	# Only requests that are closed will be billed
+	var requestconfig = "{\"list_info\":{\"search_criteria\":[{\"condition\":\"gte\",\"field\":\"resolved_time\",\"values\":[${from_timestamp}]},{\"condition\":\"lte\",\"field\":\"resolved_time\",\"values\":[${to_timestamp}],\"logical_operator\":\"AND\"},{\"condition\":\"is\",\"field\":\"status.name\",\"values\":[\"Closed\"],\"logical_operator\":\"AND\"}],\"row_count\":100,\"start_index\":${pageoffset},\"get_total_count\":true,\"sort_field\":\"resolved_time\",\"sort_order\":\"asc\"}}"
+	uri component-encode requestconfig 
+
+	clear http_headers
+	set http_secure no
+	set http_header "Accept: application/json"
+	set http_header "authtoken: ${api_key}"
+	set http_savefile "${jsonfolder}/${thisyear}${thismonth}${thisday}_Request_List_${requestlists.COUNT}.json"
+
+	buffer allrequests = http GET "${httproot}/api/v3/requests?input_data=${requestconfig}"
+	if (${HTTP_STATUS_CODE} != 200) {
+		gosub write_http_error (${HTTP_STATUS_CODE})
+	}
+
+	var requests_found = $JSON{allrequests}.[list_info].[total_count]
+	print "===================================="
+	print "${requests_found} total requests"
+
+	## Determine if loop is needed
+	var has_more_rows = $JSON{allrequests}.[list_info].[has_more_rows]
+	print "Has more rows: ${has_more_rows}"
+
+	# Extract items to the CSV Output
+	foreach $JSON{allrequests}.[requests].[] as this_request {
+		var requestid = $JSON(this_request).[id]
+		print "===================================="
+		print "Processing request: ${requestid} (# ${request_counter} of ${requests_found})"
+		# print "Created time stamp: $JSON(this_request).[created_time].[value]"
+	
+		# Extract Individual Request
+		clear http_headers
+		set http_secure no
+		set http_header "Accept: application/json"
+		set http_header "authtoken: ${api_key}"
+		#set http_body data input_data:"{\"list_info\":{\"row_count\":20,\"start_index\":1,\"sort_field\":\"subject\",\"sort_order\":\"asc\",\"get_total_count\":true,\"filter_by\":{\"name\":\"Open_System\"}}}"
+		set http_savefile "${jsonfolder}/Request_${requestid}.json"
+		buffer request= http GET "${httproot}/api/v3/requests/${requestid}"
+
+		var resolvetime = $JSON{request}.[request].[resolved_time].[display_value]
+		# Date format from SDP: 21/12/2022
+		var resolveyear = (@SUBSTR("${resolvetime}", 7, 4))
+		var resolvemonth = (@SUBSTR("${resolvetime}", 4, 2))
+		var resolveday = (@SUBSTR("${resolvetime}", 1, 2))
+		var billable_time = "0 Hrs 0 Mins"
+
+		print "Request resolved at ${resolvetime}"
+
+		# Check to see if we're on a different day of the month than previously and if so, close the current file and open a new
+		if (${resolveday} != ${thisday}) {
+			print "===================================="
+			print "Closing file ${requests_export_file}"
+			csv close "requests"
+			
+			# Set new date to use for new file. We can set year and month without checking as it will always be correct since it's based on the date in the actual request
+			var thisday = ${resolveday}
+			var thismonth = ${resolvemonth}
+			var thisyear = ${resolveyear}
+
+			# Setup output file
+			var requests_export_file = "${exportdir}/${thisyear}${thismonth}${thisday}_Requests_List.csv"
+
+			# Create output CSV file
+			print "Opening file ${requests_export_file}"
+			print "===================================="
+			csv "requests" = "${requests_export_file}"
+			csv add_headers "requests" requester_email_id requester_name requester_mobile resolved_time requester_id requester_status template_name template_id short_description created_time subject is_overdue technician_email_id technician_name technician_mobile technician_is_vipuser technician_id technician_status priority_name priority_id created_by_email_id created_by_name created_by_mobile created_by_is_vipuser created_by_id created_by_status due_by_time site_email_id site_latitude site_name site_id site_longitude is_service_request accountcontract id account_name account_id status_name status_id group is_billable billable_time
+			csv fix_headers "requests"
+		}
+		
+		if (${HTTP_STATUS_CODE} != 200) {
+			gosub write_http_error (${HTTP_STATUS_CODE})
+		}
+
+		set http_savefile "${jsonfolder}/Worklogs_${requestid}.json"
+
+		var this_URI = "${httproot}/api/v3/requests/${requestid}/worklogs?PORTALID=1"
+		buffer worklogs = http GET ${this_URI}
+
+		var billable_time = "0 Hrs 0 Mins"
+
+		if (${HTTP_STATUS_CODE} != 200) {
+			print "Error while fetching worklogs for request ${requestid}"
+			print "URI: ${this_URI}"
+			print "Status: ${HTTP_STATUS_CODE}"
+		} else {
+			var worklogs_row_count = $JSON{worklogs}.[list_info].[row_count]
+			print "Found ${worklogs_row_count} worklog(s)"
+			if (${worklogs_row_count} > 0) { 
+				foreach $JSON{worklogs}.[worklogs] as this_worklog {
+					var is_billable = $JSON(this_worklog).[is_billable]
+					if (${is_billable} == "true") {
+						var billable_time_hours = $JSON(this_worklog).[time_spent].[hours]
+						var billable_time_minutes = $JSON(this_worklog).[time_spent].[minutes]
+						var billable_time = "${billable_time_hours} Hrs ${billable_time_minutes} Mins"
+						print "Billable time: ${billable_time}"
+					} else {
+						print "No billable time found."
+						var billable_time = "0 Hrs 0 Mins"
+						var is_billable = "false"
+					}
+
+					var resolvedate = (@SUBSTR("${resolvetime}", 1, 10))
+					var thisdate = "${thisday}/${thismonth}/${thisyear}"
+					if ("${resolvedate}" == "${thisdate}") {		
+						csv write_field requests $JSON(this_request).[requester].[email_id]
+						csv write_field requests $JSON(this_request).[requester].[name]
+						csv write_field requests $JSON(this_request).[requester].[mobile]
+						csv write_field requests "${resolvetime}"
+						csv write_field requests $JSON(this_request).[requester].[id]
+						csv write_field requests $JSON(this_request).[requester].[status]
+						csv write_field requests $JSON(this_request).[template].[name]
+						csv write_field requests $JSON(this_request).[template].[id]
+						#csv write_field requests $JSON(this_request).[short_description]
+						csv write_field requests "Temporary excluded from Exivity data set" # The import of the CSV crashes if there are quotation marks in here
+						csv write_field requests $JSON(this_request).[created_time].[display_value]
+						#csv write_field requests $JSON(this_request).[subject]
+						csv write_field requests "Temporary excluded from Exivity data set" # The import of the CSV crashes if there are quotation marks in here
+						csv write_field requests $JSON(this_request).[is_overdue]
+						csv write_field requests $JSON(this_request).[technician].[email_id]
+						csv write_field requests $JSON(this_request).[technician].[name]
+						csv write_field requests $JSON(this_request).[technician].[mobile]
+						csv write_field requests $JSON(this_request).[technician].[is_vipuser]
+						csv write_field requests $JSON(this_request).[technician].[id]
+						csv write_field requests $JSON(this_request).[technician].[status]
+						csv write_field requests $JSON(this_request).[priority].[name]
+						csv write_field requests $JSON(this_request).[priority].[id]
+						csv write_field requests $JSON(this_request).[created_by].[email_id]
+						csv write_field requests $JSON(this_request).[created_by].[name]
+						csv write_field requests $JSON(this_request).[created_by].[mobile]
+						csv write_field requests $JSON(this_request).[created_by].[is_vipuser]
+						csv write_field requests $JSON(this_request).[created_by].[id]
+						csv write_field requests $JSON(this_request).[created_by].[status]
+						csv write_field requests $JSON(this_request).[due_by_time]
+						csv write_field requests $JSON(this_request).[site].[email_id]
+						csv write_field requests $JSON(this_request).[site].[latitude]
+						csv write_field requests $JSON(this_request).[site].[name]
+						csv write_field requests $JSON(this_request).[site].[id]
+						csv write_field requests $JSON(this_request).[site].[longitude]
+						csv write_field requests $JSON(this_request).[is_service_request]
+						csv write_field requests $JSON(this_request).[accountcontract]
+						csv write_field requests $JSON(this_request).[id]
+						csv write_field requests $JSON(this_request).[account].[name]
+						csv write_field requests $JSON(this_request).[account].[id]
+						csv write_field requests $JSON(this_request).[status].[name]
+						csv write_field requests $JSON(this_request).[status].[id]
+						csv write_field requests $JSON(this_request).[group]
+						csv write_field requests "${is_billable}"
+						csv write_field requests "${billable_time}"
+					}
+				}
+			} 
+		}
+		var request_counter += 1
+	}
+
+	if("${has_more_rows}" == "true") {
+		var start_index = $JSON{allrequests}.[list_info].[start_index]
+		var row_count = $JSON{allrequests}.[list_info].[row_count]
+		print "===================================="
+		print "Start index: ${start_index}"
+		print "Row count: ${row_count}"
+		print "Current start index: ${pageoffset}"
+		var pageoffset += 100
+		print "New start index: ${pageoffset}"
+	} else {
+		exit_loop
+	}
 }
 
-## Pre Extraction tests
-if (${debug_mode} == yes) {
-	print Running pre extraction checks
-}
-# Test for default environment
-if (("${microsoft_domain}" == "Default") && ("${application_id}" == "Default") && ("${application_secret}" == "Default")) {
-	print "Cannot run the Extractor in the default environment!"
+print "===================================="
+print "Closing file ${requests_export_file}"
+csv close "requests"
+
+#### Subroutines ####
+subroutine write_http_error {
+	#Subroutine vars
+	#${SUBARG_1} = HTTP_STATUS_CODE
+
+	print Got HTTP status ${SUBARG_1}, expected a status of 200
 	terminate with error
 }
-# Test the date argument
-gosub check_dateformat(${ARG_1})
 
-## Pre Extraction Setup
-if (${debug_mode} == yes) {
-	print Running pre extraction setup
+subroutine format_date {
+    match day "^[0-9]{6}([0-9]{2})" ${SUBARG_1}
+    if (${day.STATUS} != MATCH) {
+        terminate with error
+    } else {
+        var day = ${day.RESULT}
+    }
+    match month "^[0-9]{4}([0-9]{2})[0-9]{2}" ${SUBARG_1}
+    if (${month.STATUS} != MATCH) {
+        terminate with error
+    } else {
+        var month = ${month.RESULT}
+    }
+    match year "^([0-9]{4})[0-9]{4}" ${SUBARG_1}
+    if (${year.STATUS} != MATCH) {
+        terminate with error
+    } else {
+        var year = ${year.RESULT}
+    }
 }
-# Setup date data
-gosub format_date(${ARG_1})
-# Setup invoice offset
-gosub determine_offset(${year},${month})
-# Setup Partnerroot
-var partner_root = "https://api.partnercenter.microsoft.com"
-# Encode items for token
-uri encode-component application_id
-uri encode-component application_secret
-# Setup default paths
-var auth_json_file = "${export_directory}/DEBUG/Auth/${microsoft_domain}/${YEAR}${MONTH}${DAY}_Auth.json"
-var billing_onetime_export_file = "${export_directory}/Invoices/Billed/${year}${month}_invoice_onetime_${microsoft_domain}.csv"
-var billing_marketplace_export_file = "${export_directory}/Invoices/Billed/${year}${month}_invoice_marketplace_${microsoft_domain}.csv"
-var billing_final_file = "${export_directory}/Invoices/Billed/${year}${month}data.csv"
-var billing_json_filepath = "${export_directory}/DEBUG/Invoices/Billed/${microsoft_domain}"
-var unbilled_export_file = "${export_directory}/Invoices/Unbilled/${YEAR}${MONTH}_${microsoft_domain}.csv"
-var unbilled_json_filepath = "${export_directory}/DEBUG/Invoices/Unbilled/${microsoft_domain}"
-# Write debug data
-if (${debug_mode} == yes) {
-	print exportdir: ${export_directory}
-	print day: ${day}
-	print month: ${month}
-	print year: ${year}
-	print offset: ${offset}
-	print partner_root: ${partner_root}
-	print auth_json_file: ${auth_json_file}
-	print billing_onetime_export_file: ${billing_onetime_export_file}
-	print billing_marketplace_export_file: ${billing_marketplace_export_file}
-	print billing_json_filepath: ${billing_json_filepath}
-	print unbilled_export_file: ${unbilled_export_file}
-	print unbilled_json_filepath: ${unbilled_json_filepath}
-}
-if()
-buffer foo=file 

@@ -31,13 +31,13 @@
           <key>match</key>
           <string>(#.*)</string>
           <key>name</key>
-          <string>comment.line.number-sign.use.exivityuse</string>
+          <string>comment.line.number-sign.exivityuse</string>
         </dict>
         <dict>
           <key>match</key>
           <string>(\.\[.+\])</string>
           <key>name</key>
-          <string>support.type.use.exivityuse</string>
+          <string>support.type.exivityuse</string>
         </dict>
         <dict>
           <key>begin</key>
@@ -47,11 +47,11 @@
             <key>1</key>
             <dict>
               <key>name</key>
-              <string>storage.type.use.exivityuse</string>
+              <string>storage.type.exivityuse</string>
             </dict>
           </dict>
           <key>contentName</key>
-          <string>variable.other.readwrite.use.exivityuse</string>
+          <string>variable.other.readwrite.exivityuse</string>
           <key>end</key>
           <string>(\s)</string>
           <key>endCaptures</key>
@@ -59,33 +59,57 @@
             <key>1</key>
             <dict>
               <key>name</key>
-              <string>variable.other.readwrite.use.exivityuse</string>
+              <string>variable.other.readwrite.exivityuse</string>
             </dict>
           </dict>
         </dict>
         <dict>
           <key>match</key>
-          <string>((aws_sign_string|basename|buffer|clear|csv|decimal_to_ipv4|discard|encode|encrypt|environment|exit_loop|foreach|generate_jwt|get_last_day_of|gosub|gunzip|hash|http|if|ipv4_to_decimal|json|loglevel|loop|lowercase|match|pause|print|return|save|set|subroutine|terminate|unzip|uppercase|uri|else|){1}\s)</string>
+          <string>((aws_sign_string|basename|buffer|clear|csv|decimal_to_ipv4|discard|encode|encrypt|environment|exit_loop|foreach|generate_jwt|get_last_day_of|gosub|gunzip|hash|http|if|ipv4_to_decimal|json|loglevel|loop|lowercase|match|pause|return|save|set|subroutine|terminate|unzip|uppercase|uri|else|){1}\s)</string>
           <key>name</key>
-          <string>keyword.use.exivityuse</string>
+          <string>keyword.exivityuse</string>
         </dict>
         <dict>
           <key>match</key>
           <string>(@(MIN|MAX|ROUND|CONCAT|SUBSTR|STRLEN|PAD|EXTRACT_BEFORE|EXTRACT_AFTER|CURDATE|DATEADD|DATEDIFF|DTADD|){1})</string>
           <key>name</key>
-          <string>support.function.use.exivityuse</string>
+          <string>support.function.exivityuse</string>
         </dict>
         <dict>
           <key>match</key>
           <string>((encode-component|INFO|DEBUG|DEBUGX|WARN|ERROR|FATAL|using|as|http_headers|add_headers|fix_headers|write_fields|write_field|close|http_secure|http_header|http_savefile|with error){1}\s)</string>
           <key>name</key>
-          <string>keyword.other.option.use.exivityuse</string>
+          <string>keyword.other.option.exivityuse</string>
         </dict>
         <dict>
           <key>match</key>
           <string>((GET|POST|PUT|DELETE){1})</string>
           <key>name</key>
-          <string>keyword.other.option.use.exivityuse</string>
+          <string>keyword.other.option.exivityuse</string>
+        </dict>
+        <dict>
+          <key>begin</key>
+          <string>(print\s{1})</string>
+          <key>beginCaptures</key>
+          <dict>
+            <key>1</key>
+            <dict>
+              <key>name</key>
+              <string>keyword.exivityuse</string>
+            </dict>
+          </dict>
+          <key>contentName</key>
+          <string>string.quoted.double.exivityuse</string>
+          <key>end</key>
+          <string>($)</string>
+          <key>endCaptures</key>
+          <dict>
+            <key>1</key>
+            <dict>
+              <key>name</key>
+              <string>string.quoted.double.exivityuse</string>
+            </dict>
+          </dict>
         </dict>
         <dict>
           <key>begin</key>
@@ -95,11 +119,11 @@
             <key>1</key>
             <dict>
               <key>name</key>
-              <string>keyword.operator.use.exivityuse</string>
+              <string>keyword.operator.exivityuse</string>
             </dict>
           </dict>
           <key>contentName</key>
-          <string>string.quoted.double.use.exivityuse</string>
+          <string>string.quoted.double.exivityuse</string>
           <key>end</key>
           <string>(&quot;)</string>
           <key>endCaptures</key>
@@ -107,7 +131,7 @@
             <key>1</key>
             <dict>
               <key>name</key>
-              <string>keyword.operator.use.exivityuse</string>
+              <string>keyword.operator.exivityuse</string>
             </dict>
           </dict>
         </dict>
@@ -119,11 +143,11 @@
             <key>1</key>
             <dict>
               <key>name</key>
-              <string>variable.other.readwrite.use.exivityuse</string>
+              <string>variable.other.readwrite.exivityuse</string>
             </dict>
           </dict>
           <key>contentName</key>
-          <string>variable.other.readwrite.use.exivityuse</string>
+          <string>variable.other.readwrite.exivityuse</string>
           <key>end</key>
           <string>(\})</string>
           <key>endCaptures</key>
@@ -131,21 +155,21 @@
             <key>1</key>
             <dict>
               <key>name</key>
-              <string>variable.other.readwrite.use.exivityuse</string>
+              <string>variable.other.readwrite.exivityuse</string>
             </dict>
           </dict>
         </dict>
         <dict>
           <key>match</key>
-          <string>(\.|,|{|}|\(|\)|=|-|\%|:|!)</string>
+          <string>(\.|,|\{|\}|\[|\]|\(|\)|=|-|\%|:|!|\+|&lt;|&gt;|\||\\|\*|¤|%|\/)</string>
           <key>name</key>
-          <string>keyword.operator.use.exivityuse</string>
+          <string>keyword.operator.exivityuse</string>
         </dict>
         <dict>
           <key>match</key>
           <string>(\d+)</string>
           <key>name</key>
-          <string>constant.numeric.use.exivityuse</string>
+          <string>constant.numeric.exivityuse</string>
         </dict>
         <dict>
           <key>begin</key>
@@ -155,11 +179,11 @@
             <key>1</key>
             <dict>
               <key>name</key>
-              <string>support.type.use.exivityuse</string>
+              <string>support.type.exivityuse</string>
             </dict>
           </dict>
           <key>contentName</key>
-          <string>support.type.use.exivityuse</string>
+          <string>support.type.exivityuse</string>
           <key>end</key>
           <string>(\})</string>
           <key>endCaptures</key>
@@ -167,7 +191,7 @@
             <key>1</key>
             <dict>
               <key>name</key>
-              <string>support.type.use.exivityuse</string>
+              <string>support.type.exivityuse</string>
             </dict>
           </dict>
         </dict>
@@ -179,11 +203,11 @@
             <key>1</key>
             <dict>
               <key>name</key>
-              <string>support.type.use.exivityuse</string>
+              <string>support.type.exivityuse</string>
             </dict>
           </dict>
           <key>contentName</key>
-          <string>support.type.use.exivityuse</string>
+          <string>support.type.exivityuse</string>
           <key>end</key>
           <string>(\))</string>
           <key>endCaptures</key>
@@ -191,7 +215,7 @@
             <key>1</key>
             <dict>
               <key>name</key>
-              <string>support.type.use.exivityuse</string>
+              <string>support.type.exivityuse</string>
             </dict>
           </dict>
         </dict>
@@ -222,6 +246,12 @@
        </array>
     </dict>
     <key>main__5</key>
+    <dict>
+      <key>patterns</key>
+      <array> 
+       </array>
+    </dict>
+    <key>main__6</key>
     <dict>
       <key>patterns</key>
       <array> 
