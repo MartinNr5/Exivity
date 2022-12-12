@@ -1,9 +1,14 @@
-# Change Log
+# Changelog
+All notable changes to this project will be documented in this file.
 
-All notable changes to the "exivity" extension will be documented in this file.
-
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
+The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
+- Support for Transcript
+- Support for markdown in code completion tooltips
+- Complete code validation
+- Better syntax highlighting
+- Hover information for variables, etc.
 
-- Initial release
+## [0.0.1] - 2022-12-09
+- Intial release

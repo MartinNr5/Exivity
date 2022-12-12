@@ -1,6 +1,5 @@
 /* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See License.txt in the project root for license information.
+ * Copyright (c) Martin Edelius. All rights reserved.
  * ------------------------------------------------------------------------------------------ */
 import {
   createConnection,
@@ -20,6 +19,7 @@ import {
   TextEdit,
   Position,
   MarkupKind,
+  MarkupContent,
 } from "vscode-languageserver/node";
 
 import { TextDocument } from "vscode-languageserver-textdocument";
@@ -553,7 +553,7 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
       insertText: "@DATEADD(${1:<date>}, ${2:<days>})",
       insertTextFormat: InsertTextFormat.Snippet,
       documentation:
-        "Adds a specified number of days to the given date, returning the result as a _yyyyMMdd_ date.",
+        "Adds a specified number of days to the given date, returning the result as a *yyyyMMdd* date.",
     },
     {
       label: "DATEDIFF",
