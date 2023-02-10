@@ -10,5 +10,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 - Better syntax highlighting
 - Hover information for variables, etc.
 
+## [0.1.0] - 2023-02-10
+### Added
+- Syntax validation
+### Fixed
+- Broken syntax validation
+
 ## [0.0.1] - 2022-12-09
 - Intial release

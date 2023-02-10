@@ -12,13 +12,13 @@ foreach $JSON{json_data}.[data].[result] as this_result {
     print Processing namespace: ${account_name}
 
     # Iterate over the metrics array within the result element
-    foreach $JSON(this_result).[metrics] as this_metric {
+    foreach $JSON(this_result). [metrics] as this_metric {
 
     # As the metrics array contains anonymous arrays we need to iterate
     # further over each element. Note the use of an empty notepath.
 
-        foreach $JSON(this_metric).[] as this_sub_metric {
-            if (${this_sub_metric.COUNT} == 1) {
+        foreach $JSON (this_metric).[] as this_sub_metric {
+            if(${this_sub_metric.COUNT} == 1) {
                 # Assign the value on the first loop iteration to 'related_id'
                 var related_id = $JSON(this_sub_metric).[]
             }
@@ -32,3 +32,4 @@ foreach $JSON{json_data}.[data].[result] as this_result {
     }    
 }
 csv close OUTFILE
+

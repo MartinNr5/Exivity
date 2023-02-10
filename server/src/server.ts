@@ -20,6 +20,11 @@ import {
   Position,
   MarkupKind,
   MarkupContent,
+  MarkedString,
+  CodeAction,
+  CodeActionKind,
+  Command,
+  TextDocumentEdit,
 } from "vscode-languageserver/node";
 
 import { TextDocument } from "vscode-languageserver-textdocument";
@@ -60,6 +65,10 @@ connection.onInitialize((params: InitializeParams) => {
       completionProvider: {
         resolveProvider: true,
       },
+      //      codeActionProvider: true,
+      //      executeCommandProvider: {
+      //         commands: ["sample.fixMe"],
+      //      },
     },
   };
   if (hasWorkspaceFolderCapability) {
@@ -94,28 +103,138 @@ documents.onDidChangeContent((change) => {
 });
 
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
+  class ValidationItem {
+    regexPattern!: RegExp;
+    message!: string;
+    severity!: DiagnosticSeverity;
+  }
+
   const text = textDocument.getText();
   const diagnostics: Diagnostic[] = [];
+  const validationItems: ValidationItem[] = [
+    {
+      regexPattern: /buffer\s\w+(=\s|\s=\s{0}|=)\w+/g,
+      message: "'buffer' requires spaces before and after =",
+      severity: DiagnosticSeverity.Error,
+    },
+    {
+      regexPattern: /(if\()/g,
+      message: "'if' needs a space between 'if' and opening paranthesis",
+      severity: DiagnosticSeverity.Error,
+    },
+    {
+      regexPattern: /@([a-z]+|[A-Z]+)[a-z]+/g,
+      message: "Functions must be specified in UPPER CASE",
+      severity: DiagnosticSeverity.Error,
+    },
+    {
+      regexPattern: /@{2}[A-Z]+/g,
+      message: "Functions can only have one @ sign",
+      severity: DiagnosticSeverity.Error,
+    },
+    {
+      regexPattern:
+        /buffer [\w]+ = (?!file|odbc|http|data|odbc_direct|FILE|ODBC|HTTP|DATA|ODBC_DIRECT)/g,
+      message:
+        "'buffer' can only use 'data', 'http', 'file', 'odbc', and 'odbc_direct' as protocols",
+      severity: DiagnosticSeverity.Error,
+    },
+    {
+      regexPattern: /\$JSON\(+\w*(?!.*\))/g,
+      message:
+        "The name of the buffer in a JSON parslet must be enclosed with ()",
+      severity: DiagnosticSeverity.Error,
+    },
+    {
+      regexPattern: /\$JSON\{+\w*(?!.*\})/g,
+      message:
+        "The name of the buffer in a JSON parslet must be enclosed with {}",
+      severity: DiagnosticSeverity.Error,
+    },
+    {
+      regexPattern: /\$(JSON|XML)\(\w*\)(?!.*\.)\[/g,
+      message: "Parslets must use . between the named buffer and the node path",
+      severity: DiagnosticSeverity.Error,
+    },
+    {
+      regexPattern: /\$(JSON|XML)\{\w*\}(?!.*\.)\[/g,
+      message: "Parslets must use . between the named buffer and the node path",
+      severity: DiagnosticSeverity.Error,
+    },
+    {
+      regexPattern: /\$(JSON|XML)\(\w*\)\.(?!.*\[)/g,
+      message: "The name of a node path in a parslet must be enclosed with []",
+      severity: DiagnosticSeverity.Error,
+    },
+    {
+      regexPattern: /\$(JSON|XML)\{\w*\}\.(?!.*\[)/g,
+      message: "The name of a node path in a parslet must be enclosed with []",
+      severity: DiagnosticSeverity.Error,
+    },
+    {
+      regexPattern: /\$(JSON|XML)\(\w*\)\.\[\w*(?!.*\])/g,
+      message: "The name of a node path in a parslet must be enclosed with []",
+      severity: DiagnosticSeverity.Error,
+    },
+    {
+      regexPattern: /\$(JSON|XML)\{\w*\}\.\[\w*(?!.*\])/g,
+        message: "The name of a node path in a parslet must be enclosed with []",
+        severity: DiagnosticSeverity.Error,
+    },
+    {
+      regexPattern: /\$(JSON|XML)\(\)/g,
+      message: "The buffername in a parslet can't be empty",
+      severity: DiagnosticSeverity.Error,
+    },
+    {
+      regexPattern: /\$(JSON|XML)\{\}/g,
+      message: "The buffername in a parslet can't be empty",
+        severity: DiagnosticSeverity.Error,
+    },
+    
+    {
+      regexPattern: /\$(JSON|XML)\(\w*\)\.\[\w*\]\.\[\]/g,
+      message: "An empty nodepath can't be part of a nodepath",
+      severity: DiagnosticSeverity.Error,
+    },
+    
+    {
+      regexPattern: /\$(JSON|XML)\{\w*\}\.\[\]/g,
+      message: "The nodename in a parslet can't be empty",
+        severity: DiagnosticSeverity.Error,
+    },
 
-  // Create array of regex to match with and corrsponding messages so that we can loop through them all
-  const regexPatterns: RegExp[] = [
-    /buffer\s\w+(=\s|\s=\s{0}|=)\w+/g,
-    /(if\()/g,
-  ];
-  const messages: string[] = [
-    "requires spaces before and after =.",
-    "needs a space between 'if' and opening paranthesis.",
+    {
+      regexPattern: /\$(?:JSON|XML)(?:\(\s+|\s+|\(\w+\s+)/g,
+      message:
+        "No white space is allowed before or after the enclosed buffer name in a parslet",
+      severity: DiagnosticSeverity.Error,
+    },
+    {
+      regexPattern: /\$(?:JSON|XML)\(\w+\)\.\[\s+|\w+\s+\]/g,
+      message:
+        "No white space is allowed before or after the name of a nodepath",
+      severity: DiagnosticSeverity.Error,
+    },
+    // Not working as expected
+    {
+      regexPattern: /\$(?:JSON|XML)\(\w+\)\s+\.|\$(?:JSON|XML)\(\w+\)\.\s+/g,
+      message:
+        "No white space is allowed between the buffer name and the node path",
+      severity: DiagnosticSeverity.Error,
+    },
   ];
 
-  for (let i = 0; i < regexPatterns.length; i++) {
-    const pattern = regexPatterns[i];
+  // Loop through all validation items to see if we have a match
+  for (let i = 0; i < validationItems.length; i++) {
+    const pattern = validationItems[i].regexPattern;
     let m: RegExpExecArray | null;
     while ((m = pattern.exec(text))) {
-      const message = messages[i];
-      const thisMessage = `${m[0]} ${message}`;
+      const thisMessage = validationItems[i].message;
+      // const thisMessage = `${m[0]} ${message}`;
 
       const diagnostic: Diagnostic = {
-        severity: DiagnosticSeverity.Error,
+        severity: validationItems[i].severity,
         range: {
           start: textDocument.positionAt(m.index),
           end: textDocument.positionAt(m.index + m[0].length),
@@ -123,6 +242,8 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
         message: thisMessage,
         source: "ex",
       };
+
+      // Add this diagnostics message to the array
       diagnostics.push(diagnostic);
     }
   }
@@ -477,7 +598,7 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
         "\n"
       ),
       insertTextFormat: InsertTextFormat.Snippet,
-      documentation: "If-Else Statement",
+      documentation: "If-Else example",
     },
     {
       label: "foreach (example)",
@@ -497,15 +618,15 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
       insertText: "@MAX(${1:<number>}, ${2:<number>} ${3:[, <number> ...]})",
       insertTextFormat: InsertTextFormat.Snippet,
       documentation:
-        "Returns the largest number from the specified list (requires at least 2 arguments).",
-    },
+        "*`@MAX(number, number[, number ...])`*\n\nReturns the largest number from the specified list (requires at least 2 arguments).",
+    },    
     {
       label: "MIN",
       kind: CompletionItemKind.Function,
       insertText: "@MIN(${1:<number>}, ${2:<number>} ${3:[, <number> ...]})",
       insertTextFormat: InsertTextFormat.Snippet,
       documentation:
-        "Returns the smallest number from the specified list (requires at least 2 arguments).",
+        "*`@MIN(number, number[, number ...])`*\n\nReturns the smallest number from the specified list (requires at least 2 arguments).",
     },
     {
       label: "ROUND",
@@ -513,7 +634,7 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
       insertText: "@ROUND(${1:<number>} ${2:[, <digits>]})",
       insertTextFormat: InsertTextFormat.Snippet,
       documentation:
-        "Returns number rounded to digits decimal places. If the digits argument is not specified then the function will round to the nearest integer.",
+        "*`@ROUND($number[, digits])`*\n\nReturns `number` rounded to `digits` decimal places. If the `digits` argument is not specified then the function will round to the nearest integer.",
     },
     {
       label: "CONCAT",
@@ -522,7 +643,7 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
         "@CONCAT(${1:<string1>, ${2:<string2>} ${3:[, <stringN> ...]})",
       insertTextFormat: InsertTextFormat.Snippet,
       documentation:
-        "Treats all its arguments as strings, concatenates them, and returns the result.",
+        "*`@CONCAT(string1, string2[, stringN ...])`*\n\nTreats all its arguments as strings, concatenates them, and returns the result.",
     },
     {
       label: "SUBSTR",
@@ -530,7 +651,7 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
       insertText: "@SUBSTR(${1:<string>}, ${2:<start>} ${3:[, <length>]})",
       insertTextFormat: InsertTextFormat.Snippet,
       documentation:
-        "Returns a sub-string of string, starting from the character at position start and continuing until the end of the string end until the character at position length, whichever is shorter.",
+        "*`@SUBSTR(string, start[, length)`*\n\nReturns a sub-string of `string`, starting from the character at position `start` and continuing until the end of the string or until the character at position `length`, whichever is shorter.",
     },
     {
       label: "STRLEN",
@@ -545,7 +666,7 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
       insertText: "@CURDATE()",
       insertTextFormat: InsertTextFormat.Snippet,
       documentation:
-        "Returns the current (actual) date in the timezone of the Exivity server. The format may be any valid combination of strftime specifiers. The default format is %Y%m%d which returns a date in yyyyMMdd format",
+        "Returns the current (actual) date in the timezone of the Exivity server. The format may be any valid combination of strftime specifiers. The default format is *%Y%m%d* which returns a date in *yyyyMMdd* format",
     },
     {
       label: "DATEADD",
@@ -561,7 +682,7 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
       insertText: "@DATEDIFF(${1:<date1>}, ${2:<date2>})",
       insertTextFormat: InsertTextFormat.Snippet,
       documentation:
-        "Returns the difference in days between two yyyyMMdd dates. A positive result means that date1 is later than date2. A negative result means that date2 is later than date1. A result of 0 means that the two dates are the same.",
+        "Returns the difference in days between two *yyyyMMdd* dates. A positive result means that `date1` is later than `date2`. A negative result means that `date2` is later than `date1`. A result of 0 means that the two dates are the same.",
     },
     {
       label: "DTADD",
@@ -569,7 +690,7 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
       insertText: "@DTADD(${1:<datetime>}, ${2:<count>} ${3:[, <units>]})",
       insertTextFormat: InsertTextFormat.Snippet,
       documentation:
-        "Adds count number of unit_s (DAYS by default) to the specified datetime value and return normalised result datetime value in YYYYMMDDhhmmss_ format.",
+        "Adds `count` number of `unit`s (*DAYS* by default) to the specified `datetime` value and return normalised result datetime value in *YYYYMMDDhhmmss* format.",
     },
     {
       label: "PAD",
@@ -577,7 +698,7 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
       insertText: "@DTADD(${1:<width>}, ${2:<value>} ${3:[, <pad_char>]})",
       insertTextFormat: InsertTextFormat.Snippet,
       documentation:
-        "Returns value, left-padded with pad_char (0 by default) up to specified width. If width is less than or equal to the width of value, no padding occurs.",
+        "Returns `value`, left-padded with `pad_char` (*0* by default) up to specified `width`. If `width` is less than or equal to the width of `value`, no padding occurs.",
     },
     {
       label: "EXTRACT_BEFORE",
@@ -993,8 +1114,43 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
         "Sets all letters in a variable or named buffer to upper case.",
     },
   ];
+
+  const markdown: MarkupContent = {
+    kind: MarkupKind.Markdown,
+    value: suggestions[item.data].documentation,
+  };
+
+  suggestions[item.data].documentation = <string>(<unknown>markdown);
   return suggestions[item.data];
 });
+
+/* connection.onCodeAction((params) => {
+	const textDocument = documents.get(params.textDocument.uri);
+	if (textDocument === undefined) {
+		return undefined;
+	}
+	const title = 'With User Input';
+	return [CodeAction.create(title, Command.create(title, 'sample.fixMe', textDocument.uri), CodeActionKind.QuickFix)];
+});
+
+connection.onExecuteCommand(async (params) => {
+	if (params.command !== 'sample.fixMe' || params.arguments ===  undefined) {
+		return;
+	}
+
+	const textDocument = documents.get(params.arguments[0]);
+	if (textDocument === undefined) {
+		return;
+	}
+	const newText = typeof params.arguments[1] === 'string' ? params.arguments[1] : 'Eclipse';
+	connection.workspace.applyEdit({
+		documentChanges: [
+			TextDocumentEdit.create({ uri: textDocument.uri, version: textDocument.version }, [
+				TextEdit.insert(Position.create(0, 0), newText)
+			])
+		]
+	});
+}); */
 
 // Make the text document manager listen on the connection
 // for open, change and close text document events

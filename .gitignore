@@ -5,3 +5,5 @@ client/server
 server/tsconfig.tsbuildinfo
 package-lock.json
 Exivity USEscript.iro
+server/tsconfig.tsbuildinfo
+.vscode/snippets.code-snippets
