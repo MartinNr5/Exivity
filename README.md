@@ -1,3 +1,5 @@
+**Archived as it doesn't make much sense editing USE Script and Transcript outside of the Exivity environment.**
+
 # Language extension for Exivity USE script and Transcript
 
 ## DISCLAIMER
